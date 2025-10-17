@@ -13,7 +13,7 @@ def run_server(host='127.0.0.1', port=5001, prob_loss=0.1, prob_corrupt=0.1):
         expected_seq_num = 0
 
         while True:
-            packet, addr = s.recvfrom(1024)
+            packet, addr = s.recvfrom(2048)
             
             # ETAPA 1: VERIFICAR INTEGRIDADE E DESEMPACOTAR
             unpacked_pkt = verify_packet(packet)

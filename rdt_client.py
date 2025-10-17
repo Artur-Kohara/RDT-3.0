@@ -1,6 +1,46 @@
 import socket
 import time
+import sys
 from utils import make_pkt, verify_packet, should_drop, corrupt_packet
+
+# Implementação de classe para cálculo de vazão
+class ThroughputCalculator:
+    def __init__(self):
+        self.start_time = None
+        self.total_bytes = 0
+
+    def start(self):
+        """Inicia o cronômetro."""
+        self.start_time = time.time()
+        print("Cronômetro de vazão iniciado.")
+
+    def add_bytes(self, num_bytes):
+        """Adiciona o número de bytes de dados úteis transferidos."""
+        self.total_bytes += num_bytes
+
+    def calculate(self):
+        """Para o cronômetro e calcula a vazão em Mbps."""
+        if self.start_time is None:
+            return 0
+        
+        end_time = time.time()
+        duration = end_time - self.start_time
+        
+        if duration == 0:
+            return float('inf') # Evita divisão por zero
+            
+        # Vazão = (Total de Bytes * 8) / Duração -> em bits por segundo (bps)
+        throughput_bps = (self.total_bytes * 8) / duration
+        # Converte para Megabits por segundo (Mbps)
+        throughput_mbps = throughput_bps / 1_000_000
+        
+        print("\n--- Relatório de Vazão (RDT 3.0) ---")
+        print(f"Total de Dados Enviados: {self.total_bytes / 1024:.2f} KB")
+        print(f"Tempo Total de Transferência: {duration:.4f} segundos")
+        print(f"Vazão Calculada: {throughput_mbps:.6f} Mbps")
+        print("--------------------------------------")
+        
+        return throughput_mbps
 
 # Implementação do Cliente (responsável por enviar os pacotes de dados e verificar ACKs)
 class RDTClient:
@@ -47,7 +87,7 @@ class RDTClient:
         print(f"-----------------")
 
     def send(self, data):
-        pkt = make_pkt(self.seq_num, data.encode('utf-8'))
+        pkt = make_pkt(self.seq_num, data)
 
         while True:
             # Simula perda
@@ -99,13 +139,23 @@ class RDTClient:
         print("Conexão do cliente fechada.")
 
 if __name__ == "__main__":
-    client = RDTClient()
-    
-    # Exemplo de envio de mensagens
-    messages = ["Olá, mundo!", "Este é o protocolo RDT 3.0.", "Testando o timeout dinâmico."]
-    
-    for msg in messages:
-        client.send(msg)
-        time.sleep(1) # Pequena pausa entre envios para visualização
+    PACKET_SIZE = 1024 # bytes
+    NUM_PACKETS = 100    # Quantidade de pacotes a enviar
 
+    client = RDTClient()
+    calculator = ThroughputCalculator()
+    
+    # Cria dados de exemplo para enviar
+    message_data = b'X' * PACKET_SIZE
+
+    # Inicia o cálculo da vazão
+    calculator.start()
+
+    for i in range(NUM_PACKETS):
+        print(f"\n--- Enviando Pacote {i+1}/{NUM_PACKETS} ---")
+        client.send(message_data)
+        calculator.add_bytes(len(message_data)) # Adiciona o tamanho do DADO ÚTIL
+
+    # Calcula e exibe a vazão final
+    calculator.calculate()
     client.close()

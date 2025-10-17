@@ -55,7 +55,7 @@ def verify_packet(packet):
         else:
             return None  # Checksum incorreto -> corrompido
 
-    except (pickle.UnpicklingError, KeyError, TypeError):
+    except Exception:
         # Qualquer erro no desempacotamento ou na estrutura do pacote significa corrupção
         return None
     

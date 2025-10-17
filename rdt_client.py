@@ -1,10 +1,10 @@
 import socket
 import time
-from utils import make_pkt, verify_packet
+from utils import make_pkt, verify_packet, should_drop, corrupt_packet
 
 # Implementação do Cliente (responsável por enviar os pacotes de dados e verificar ACKs)
 class RDTClient:
-    def __init__(self, server_host='127.0.0.1', server_port=5001, alpha=0.125, beta=0.25):
+    def __init__(self, server_host='127.0.0.1', server_port=5001, alpha=0.125, beta=0.25, prob_loss=0.1, prob_corrupt=0.1):
         self.server_addr = (server_host, server_port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
@@ -14,6 +14,8 @@ class RDTClient:
         self.estimated_rtt = None # Começa sem estimativa
         self.dev_rtt = None       # Começa sem estimativa
         self.timeout_interval = 1.0 # Timeout inicial de 1 segundo
+        self.prob_loss = prob_loss
+        self.prob_corrupt = prob_corrupt
 
         # Estado do cliente
         self.seq_num = 0
@@ -48,8 +50,14 @@ class RDTClient:
         pkt = make_pkt(self.seq_num, data.encode('utf-8'))
 
         while True:
-            print(f"Enviando pacote com seq={self.seq_num}...")
-            self.sock.sendto(pkt, self.server_addr)
+            # Simula perda
+            if should_drop(self.prob_loss):
+                print(f"Simulando PERDA do pacote seq={self.seq_num}. Pacote não enviado.")
+            else:
+                # Simula corrupção
+                pkt_to_send = corrupt_packet(pkt, self.prob_corrupt)
+                print(f"Enviando pacote seq={self.seq_num} (pode estar corrompido)...")
+                self.sock.sendto(pkt_to_send, self.server_addr)
             
             send_time = time.time()
             self.sock.settimeout(self.timeout_interval)

@@ -1,8 +1,8 @@
 import socket
-from utils import verify_packet, make_ack
+from utils import verify_packet, make_ack, should_drop, corrupt_packet
 
 # Implementação do servidor (responsável por receber os pacotes e confirmar seu recebimento)
-def run_server(host='127.0.0.1', port=5001):
+def run_server(host='127.0.0.1', port=5001, prob_loss=0.1, prob_corrupt=0.1):
     """
     Inicia o servidor RDT 3.0, agora com verificação de checksum unificada.
     """
@@ -40,7 +40,13 @@ def run_server(host='127.0.0.1', port=5001):
                 
                 # Envia ACK para o pacote recebido
                 ack_packet = make_ack(seq_num)
-                s.sendto(ack_packet, addr)
+                if should_drop(prob_loss):
+                    print(f"Simulando PERDA do ACK seq={seq_num}. ACK não enviado.")
+                else:
+                    # Simula corrupção de ACK
+                    ack_to_send = corrupt_packet(ack_packet, prob_corrupt)
+                    print(f"Enviando ACK seq={seq_num} (pode estar corrompido)...")
+                    s.sendto(ack_to_send, addr)
                 
                 expected_seq_num = 1 - expected_seq_num
             else:
@@ -48,7 +54,12 @@ def run_server(host='127.0.0.1', port=5001):
                 print(f"Pacote duplicado com seq={seq_num}. Reenviando ACK para o último pacote correto (ACK={1 - expected_seq_num}).")
                 last_ack_seq = 1 - expected_seq_num
                 ack_packet = make_ack(last_ack_seq)
-                s.sendto(ack_packet, addr)
+                if should_drop(prob_loss):
+                    print(f"Simulando PERDA do ACK seq={last_ack_seq}. ACK não enviado.")
+                else:
+                    ack_to_send = corrupt_packet(ack_packet, prob_corrupt)
+                    print(f"Enviando ACK seq={last_ack_seq} (pode estar corrompido)...")
+                    s.sendto(ack_to_send, addr)
 
 if __name__ == "__main__":
     run_server()

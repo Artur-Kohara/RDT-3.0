@@ -3,17 +3,13 @@ import hashlib
 import random
 
 def make_pkt(seq_num, data=b''):
-    """
-    Cria um pacote de DADOS com número de sequência, dados e um checksum MD5 dos dados.
-    """
+    # Cria um pacote de DADOS com número de sequência, dados e um checksum MD5 dos dados
     checksum = hashlib.md5(data).hexdigest()
     packet = {'seq_num': seq_num, 'data': data, 'checksum': checksum}
     return pickle.dumps(packet)
 
 def make_ack(seq_num):
-    """
-    Cria um pacote de ACK com número de sequência e um checksum.
-    """
+    # Cria um pacote de ACK com número de sequência e um checksum
     # O checksum é calculado sobre uma representação consistente do conteúdo do ACK
     ack_content = f"ack:{seq_num}".encode('utf-8')
     checksum = hashlib.md5(ack_content).hexdigest()
@@ -22,7 +18,7 @@ def make_ack(seq_num):
 
 def verify_packet(packet):
     """
-    Verifica a integridade de QUALQUER pacote (dados ou ACK) e o desempacota.
+    Verifica a integridade de qualquer pacote (dados ou ACK) e o desempacota.
     
     Retorna:
     - O dicionário do pacote desempacotado, se íntegro.
@@ -60,15 +56,11 @@ def verify_packet(packet):
         return None
     
 def should_drop(prob_loss):
-    """
-    Retorna True se o pacote deve ser perdido, com probabilidade prob_loss (0.0 a 1.0).
-    """
+    # Retorna True se o pacote deve ser perdido, com probabilidade prob_loss (0.0 a 1.0)
     return random.random() < prob_loss
 
 def corrupt_packet(packet, prob_corrupt):
-    """
-    Com probabilidade prob_corrupt, corrompe o pacote (bit flip simples).
-    """
+    # Com probabilidade prob_corrupt, corrompe o pacote (bit flip simples)
     if random.random() < prob_corrupt:
         # Bit flip: altera um byte aleatório do pacote serializado
         packet_bytes = bytearray(packet)

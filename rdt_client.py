@@ -10,16 +10,16 @@ class ThroughputCalculator:
         self.total_bytes = 0
 
     def start(self):
-        """Inicia o cronômetro."""
+        # Inicia o cronômetro.
         self.start_time = time.time()
         print("Cronômetro de vazão iniciado.")
 
     def add_bytes(self, num_bytes):
-        """Adiciona o número de bytes de dados úteis transferidos."""
+        # Adiciona o número de bytes de dados úteis transferidos
         self.total_bytes += num_bytes
 
     def calculate(self):
-        """Para o cronômetro e calcula a vazão em Mbps."""
+        # Para o cronômetro e calcula a vazão em Mbps
         if self.start_time is None:
             return 0
         
@@ -32,7 +32,7 @@ class ThroughputCalculator:
         # Vazão = (Total de Bytes * 8) / Duração -> em bits por segundo (bps)
         throughput_bps = (self.total_bytes * 8) / duration
         # Converte para Megabits por segundo (Mbps)
-        throughput_mbps = throughput_bps / 1_000_000
+        throughput_mbps = throughput_bps / 1000000
         
         print("\n--- Relatório de Vazão (RDT 3.0) ---")
         print(f"Total de Dados Enviados: {self.total_bytes / 1024:.2f} KB")
@@ -61,9 +61,7 @@ class RDTClient:
         self.seq_num = 0
     
     def _update_timeout(self, sample_rtt):
-        """
-        Atualiza o intervalo de timeout usando as fórmulas EWMA.
-        """
+        # Atualiza o intervalo de timeout usando as fórmulas EWMA
         if self.estimated_rtt is None:
             # Primeira medição
             self.estimated_rtt = sample_rtt
@@ -92,20 +90,21 @@ class RDTClient:
         while True:
             # Simula perda
             if should_drop(self.prob_loss):
-                print(f"Simulando PERDA do pacote seq={self.seq_num}. Pacote não enviado.")
+                print(f"Simulando perda do pacote seq={self.seq_num}. Pacote não enviado.")
             else:
                 # Simula corrupção
                 pkt_to_send = corrupt_packet(pkt, self.prob_corrupt)
-                print(f"Enviando pacote seq={self.seq_num} (pode estar corrompido)...")
+                print(f"Enviando pacote seq={self.seq_num}")
                 self.sock.sendto(pkt_to_send, self.server_addr)
             
+            # Inicia o timer para timeout
             send_time = time.time()
             self.sock.settimeout(self.timeout_interval)
             
             try:
                 ack_packet, _ = self.sock.recvfrom(1024)
                 
-                # VERIFICA A INTEGRIDADE DO PACOTE RECEBIDO
+                # Verifica a integridade do ACK recebido
                 unpacked_ack = verify_packet(ack_packet)
                 
                 # Verifica se é um ACK, se não é corrompido, e se o seq_num é o esperado
@@ -119,22 +118,19 @@ class RDTClient:
                     self.seq_num = 1 - self.seq_num
                     break
                 else:
-                    # O pacote recebido é corrompido, não é um ACK, ou é um ACK para o seq_num errado.
+                    # O pacote recebido é corrompido, não é um ACK, ou é um ACK para o seq_num errado
                     if unpacked_ack:
                          details = f"ACK para seq={unpacked_ack['seq_num']}"
                     else:
-                         details = "pacote CORROMPIDO"
+                         details = "pacote corrompido"
                     
                     print(f"Resposta inválida recebida (esperado ACK para seq={self.seq_num}, mas recebido {details}). Ignorando.")
-                    # Continua no loop e espera o timeout expirar.
+                    # Continua no loop e espera o timeout expirar
 
             except socket.timeout:
                 print(f"TIMEOUT! Retransmitindo pacote com seq={self.seq_num}.")
 
     def close(self):
-        """
-        Fecha o socket do cliente.
-        """
         self.sock.close()
         print("Conexão do cliente fechada.")
 
@@ -154,7 +150,7 @@ if __name__ == "__main__":
     for i in range(NUM_PACKETS):
         print(f"\n--- Enviando Pacote {i+1}/{NUM_PACKETS} ---")
         client.send(message_data)
-        calculator.add_bytes(len(message_data)) # Adiciona o tamanho do DADO ÚTIL
+        calculator.add_bytes(len(message_data)) # Adiciona o tamanho do dado útil
 
     # Calcula e exibe a vazão final
     calculator.calculate()

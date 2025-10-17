@@ -37,7 +37,7 @@ def run_server(host='127.0.0.1', port=5001, prob_loss=0.1, prob_corrupt=0.1):
                 # Envia ACK para o pacote recebido
                 ack_packet = make_ack(seq_num)
                 if should_drop(prob_loss):
-                    print(f"Simulando PERDA do ACK seq={seq_num}. ACK não enviado.")
+                    print(f"Simulando perda do ACK seq={seq_num}. ACK não enviado.")
                 else:
                     # Simula corrupção de ACK
                     ack_to_send = corrupt_packet(ack_packet, prob_corrupt)
